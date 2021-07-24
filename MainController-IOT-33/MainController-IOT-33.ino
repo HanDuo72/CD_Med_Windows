@@ -143,7 +143,7 @@ const int SLAVE_ADDR[numWindow]  = {9,3,4,5,6,7};      // Define Slave I2C Addre
 
 
 
-Void setup ()
+void setup ()
 {
 
 // put your setup code here, to run once

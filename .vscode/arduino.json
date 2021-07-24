@@ -1,0 +1,5 @@
+{
+    "sketch": "MainController-IOT-33\\MainController-IOT-33.ino",
+    "board": "arduino:samd:nano_33_iot",
+    "port": "COM3"
+}
