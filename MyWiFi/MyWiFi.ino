@@ -16,6 +16,9 @@
 char ssid[] = SECRET_SSID;     // your network SSID (name) 
 char pass[] = SECRET_PASS;     // your network password (use for WPA, or use as key for WEP)
 int status = WL_IDLE_STATUS;   // the WiFi radio's status
+unsigned long currentMillis;
+unsigned long previousMillis;
+int  Delay = 10000;            // Delay period to reset wifi
 
 void setup() 
 {
@@ -38,8 +41,13 @@ void setup()
 void loop() 
 {
   // check the network connection once every 10 seconds:
-  delay(1000);
-//  ConnectToWiFi();
+  currentMillis = millis();
+  If (currentMillis - previousMillis >= Delay)           // If Time delay for checking NTP Server has elapsed
+     {
+      ConnectToWiFi();                                                                           // Get epoch Set time to NTP Server
+      previousMillis == currentMillis;                  // Reset WiFi time delay counter
+     }  // end if 
+
   Serial.println();
   Serial.print("WiFi Status: ");
   Serial.println(WiFi.status());
