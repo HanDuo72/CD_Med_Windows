@@ -30,14 +30,20 @@ void setup()
       
   // attempt to connect to WiFi network:
 //     ConnectToWiFi;
-
+        status = WiFi.begin(ssid, pass);       // Connect to WPA/WPA2 network:
+        Serial.print("Attempting to connect to WPA SSID: ");
+        Serial.println(ssid);
 } // end setup
 
 void loop() 
 {
   // check the network connection once every 10 seconds:
-  delay(10000);
-  ConnectToWiFi();
+  delay(1000);
+//  ConnectToWiFi();
+  Serial.println();
+  Serial.print("WiFi Status: ");
+  Serial.println(WiFi.status());
+  Serial.println();
   printCurrentNet();
   printWifiData();
 
