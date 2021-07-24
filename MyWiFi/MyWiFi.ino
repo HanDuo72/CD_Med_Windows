@@ -26,13 +26,10 @@ void setup()
        ; // wait for serial port to connect. Needed for native USB port only
      } // end while
 
-  if (WiFiFirmwareNotUpToDate)
-     {
-       Serial.println("Please upgrade the firmware");
-     } // end if
+  WiFiFirmwareNotUpToDate();
       
   // attempt to connect to WiFi network:
-     ConnectToWiFi;
+//     ConnectToWiFi;
 
 } // end setup
 
@@ -40,6 +37,7 @@ void loop()
 {
   // check the network connection once every 10 seconds:
   delay(10000);
+  ConnectToWiFi();
   printCurrentNet();
   printWifiData();
 
@@ -47,7 +45,9 @@ void loop()
 
 void ConnectToWiFi() // Determine if connected to WiFi and reconnect if not
 { 
-  switch (status)
+  Serial.print("WiFi Status: ");
+  Serial.println(WiFi.status());
+  switch (WiFi.status())
     {
      case WL_CONNECTED:       // assigned when connected to a WiFi network;
         // No need to take any action connected to WIFi network
@@ -89,23 +89,30 @@ void ConnectToWiFi() // Determine if connected to WiFi and reconnect if not
         Serial.println(ssid);
         break;
      default:
+        Serial.println("Default Case");
         break;
     } //end switch
  } //end ConnectToWiFi
 
 
-bool WiFiFirmwareNotUpToDate()
+void WiFiFirmwareNotUpToDate()
 {
   String fv = WiFi.firmwareVersion();
   if (fv < WIFI_FIRMWARE_LATEST_VERSION) 
      {
-      Serial.println("Please upgrade the firmware - in function");
-      return false;
-     } // end if
+      Serial.print("Installed WiFi Firmware: ");
+      Serial.println(fv);
+      Serial.print("Most Recent WiFi Firmware: ");
+      Serial.println(WIFI_FIRMWARE_LATEST_VERSION);
+      Serial.println("Please upgrade the WiFi firmware!");
+//      return true;
+     } 
      else 
      {
-       return true;
-     } // end else
+       Serial.print("Installed WiFi Firmware: ");
+       Serial.println(fv);
+//       return false;
+     } // end if...else
 } // end WiFiFirmwareUpToDate
 
 void printWifiData() 
