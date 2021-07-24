@@ -42,19 +42,19 @@ void loop()
 {
   // check the network connection once every 10 seconds:
   currentMillis = millis();
-  If (currentMillis - previousMillis >= Delay)           // If Time delay for checking NTP Server has elapsed
+  if (currentMillis - previousMillis >= Delay)           // If Time delay for checking NTP Server has elapsed
      {
       ConnectToWiFi();                                                                           // Get epoch Set time to NTP Server
       previousMillis == currentMillis;                  // Reset WiFi time delay counter
-     }  // end if 
+  
 
-  Serial.println();
-  Serial.print("WiFi Status: ");
-  Serial.println(WiFi.status());
-  Serial.println();
-  printCurrentNet();
-  printWifiData();
-
+      Serial.println();
+      Serial.print("WiFi Status: ");
+      Serial.println(WiFi.status());
+      Serial.println();
+      printCurrentNet();
+      printWifiData();
+   }  // end if 
 } // end loop
 
 void ConnectToWiFi() // Determine if connected to WiFi and reconnect if not
