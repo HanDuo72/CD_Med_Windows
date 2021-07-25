@@ -15,7 +15,7 @@
 #include <WiFiUdp.h>            // For NTP
 #include <RTCZero.h>            // For RTC functions
 #include <Wire.h>               // Include Arduino Wire library for I2C
-#include "MyWiFiSecrets.h"      // Defines SSDI and Password for Wifi
+#include" MyWiFiSecrets.h"      // Defines SSDI and Password for Wifi
 #include "MyWiFi.h"             // Defines my Wifi Functions 
 
 // Real Time Clock
@@ -30,8 +30,8 @@
 //
 // Enter your sensitive data in the Secret tab/arduino_secrets.h
 // 
-char ssid[] = SECRET_SSID;     // your network SSID (name) 
-char pass[] = SECRET_PASS;     // your network password (use for WPA, or use as key for WEP)
+// char ssid[] = SECRET_SSID;     // your network SSID (name) 
+// char pass[] = SECRET_PASS;     // your network password (use for WPA, or use as key for WEP)
 int status = WL_IDLE_STATUS;   // the WiFi radio's status
 unsigned long previousWiFiMillis = millis();
 const int  WiFiDelay = 10000;            // Delay period to reset wifi
@@ -108,11 +108,11 @@ void setup ()
    ; // wait for serial port to connect. Needed for native USB port only
   } // end while
 
-  WiFiFirmwareNotUpToDate();                 // Check to see if the WiFi Firmware is up to date 
+  MyWiFi.WiFiFirmwareNotUpToDate();                 // Check to see if the WiFi Firmware is up to date 
   // Initial attempt to connect to WiFi network:
-  status = WiFi.begin(ssid, pass);       // Connect to WPA/WPA2 network:
+  status = WiFi.begin(SECRET_SSID, SECRET_PASS);       // Connect to WPA/WPA2 network:
   Serial.print("Attempting to connect to WPA SSID: ");
-  Serial.println(ssid);
+  Serial.println(SECRET_SSID);
   
   // Initialize I2C communications as Master
   Wire.begin();
@@ -130,9 +130,9 @@ void setup ()
 void loop()                                                                         
 {                                                                                                                             // Put your main code here, to run repeatedly 
  currentMillis = millis();                                                                                     // store the current time in millis
- currentUTC = TimeStampUTC();                                                                     // store the current datetime in UTC
+ currentUTC = TimeStampUTC();                       // store the current datetime in UTC
  TimeAdjustments();                                                                                           // Perform Time Functions - Did the Millis reset this loop?  Update NTP 
- IsWiFiGood();
+ MyWifi.IsWiFiGood();                              // Determine if connected to WiFi and reconnect if not
 
 
  getWinButtonPinValue();  
