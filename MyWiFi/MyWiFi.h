@@ -1,54 +1,52 @@
 /*
  Homemade WiFi Library 
  */
-//#ifndef MyWiFi.h
-//#define MyWiFi.h
+#ifndef MyWiFi.h
+#define MyWiFi.h
 
 
 #include "Arduino.h"
 #include <SPI.h>
 #include <WiFiNINA.h>
-
 #include "MyWiFiSecrets.h" 
 //
 // Enter your sensitive data in the Secret tab/arduino_secrets.h
 // 
-char ssid[] = SECRET_SSID;     // your network SSID (name) 
-char pass[] = SECRET_PASS;     // your network password (use for WPA, or use as key for WEP)
-int status = WL_IDLE_STATUS;   // the WiFi radio's status
-unsigned long currentMillis;
-unsigned long previousMillis = millis();
-int  Delay = 5000;            // Delay period to reset wifi
-
-void setup() 
-{
-  //Initialize serial and wait for port to open:
-  Serial.begin(9600);
-  while (!Serial) 
-     {
-       ; // wait for serial port to connect. Needed for native USB port only
-     } // end while
-
-  WiFiFirmwareNotUpToDate();
-      
-  // attempt to connect to WiFi network:
-//     ConnectToWiFi;
-        status = WiFi.begin(ssid, pass);       // Connect to WPA/WPA2 network:
-        Serial.print("Attempting to connect to WPA SSID: ");
-        Serial.println(ssid);
-} // end setup
-
-void loop() 
-{
-  // check the network connection once every 10 seconds:
-  currentMillis = millis();
-  if (currentMillis - previousMillis >= Delay)           // If Time delay for checking NTP Server has elapsed
-     {
-      ConnectToWiFi();                                                                           // Get epoch Set time to NTP Server
-      previousMillis = currentMillis;                  // Reset WiFi time delay counter
-  
-   }  // end if 
-} // end loop
+//char ssid[] = SECRET_SSID;     // your network SSID (name) 
+//char pass[] = SECRET_PASS;     // your network password (use for WPA, or use as key for WEP)
+//int status = WL_IDLE_STATUS;   // the WiFi radio's status
+//unsigned long currentMillis;
+//unsigned long previousWiFiMillis = millis();
+//const int  WiFiDelay = 5000;            // Delay period to reset wifi
+//
+//void setup() 
+//{
+//  //Initialize serial and wait for port to open:
+//  Serial.begin(9600);
+//  while (!Serial) 
+//     {
+//       ; // wait for serial port to connect. Needed for native USB port only
+//     } // end while
+//
+//  WiFiFirmwareNotUpToDate();
+//      
+//  // attempt to connect to WiFi network:
+//        status = WiFi.begin(ssid, pass);       // Connect to WPA/WPA2 network:
+//        Serial.print("Attempting to connect to WPA SSID: ");
+//        Serial.println(ssid);
+//} // end setup
+//
+//void loop() 
+//{
+//  // check the network connection once every 10 seconds:
+//  currentMillis = millis();
+//  if (currentMillis - previousWiFiMillis >= WiFiDelay)           // If Time delay for checking NTP Server has elapsed
+//     {
+//      ConnectToWiFi();                                                                           // Get epoch Set time to NTP Server
+//      previousWiFiMillis = currentMillis;                  // Reset WiFi time delay counter
+//  
+//   }  // end if 
+//} // end loop
 
 void ConnectToWiFi() // Determine if connected to WiFi and reconnect if not
 { 
@@ -180,4 +178,4 @@ void printMacAddress(byte mac[])
   Serial.println();
 } // end printMacAddress
 
-//#endif // end library MyWiFi.h
+#endif // end library MyWiFi.h

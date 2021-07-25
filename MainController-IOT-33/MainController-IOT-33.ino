@@ -11,39 +11,28 @@
 
 // Include required libraries
 #include <SPI.h>
-#include <WiFiNINA.h>      // For WiFi
-#include <WiFiUdp.h>        // For NTP
-#include <RTCZero.h>         // For RTC functions
+#include <WiFiNINA.h>           // For WiFi
+#include <WiFiUdp.h>            // For NTP
+#include <RTCZero.h>            // For RTC functions
 #include <Wire.h>               // Include Arduino Wire library for I2C
- 
+#include "MyWiFiSecrets.h"      // Defines SSDI and Password for Wifi
+#include "MyWiFi.h"             // Defines my Wifi Functions 
 
-// WiFi Credentials (edit as required)
-char ssid[] = "xxxxxxx";            // Wifi SSID
-char pass[] = "xxxxxxxxx";       // Wifi password
-int keyIndex = 0;                       // Network key Index number (needed only for WEP)
-
- 
 // Real Time Clock
-RTCZero rtc;
-int status = WL_IDLE_STATUS;
+  RTCZero rtc;
+  unsigned long LastUpdatedToNTPMillis;                               // Time in ms when we the RTC was last updated to a NTP Server
+  unsigned long UpdateToNTPDelay = 86400000;                  // 1 day to update time.
 
-unsigned long LastUpdatedToNTPMillis;                               // Time in ms when we the RTC was last updated to a NTP Server
-unsigned long UpdateToNTPDelay = 86400000;                  // 1 day to update time.
-
-
-// Time zone constant - change as required for your location
-const int GMT = 0;             //orig: "const int GMT = -5"    Using 0 to keep it UTC 
-
+  // Time zone constant - change as required for your location
+  const int GMT = 0;             //orig: "const int GMT = -5"    Using 0 to keep it UTC 
 
 //RTC Functions 
 void printTime()
 {
   print2digits(rtc.getHours() + GMT);
   Serial.print(":");
-  
   print2digits(rtc.getMinutes());
   Serial.print(":");
-  
   print2digits(rtc.getSeconds());
   Serial.println();
 } // end printTime
@@ -52,34 +41,21 @@ void printDate()
 {
   Serial.print(rtc.getDay());
   Serial.print("/");
-  
   Serial.print(rtc.getMonth());
   Serial.print("/");
-  
   Serial.print(rtc.getYear());
   Serial.print(" ");
 } // endprintDate
 
-
 // WiFi Functions 
-void printWiFiStatus()
-{
-  // Print the network SSID
-  Serial.print("SSID: ");
-  Serial.println(WiFi.SSID());
-  
-  // Print the IP address
-  IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
-  Serial.println(ip);
-  
-  // Print the received signal strength
-  long rssi = WiFi.RSSI();
-  Serial.print("signal strength (RSSI):");
-  Serial.print(rssi);
-  Serial.println(" dBm");
-} // end printWiFiStatus
- 
+//
+// Enter your sensitive data in the Secret tab/arduino_secrets.h
+// 
+char ssid[] = SECRET_SSID;     // your network SSID (name) 
+char pass[] = SECRET_PASS;     // your network password (use for WPA, or use as key for WEP)
+int status = WL_IDLE_STATUS;   // the WiFi radio's status
+unsigned long previousWiFiMillis = millis();
+const int  WiFiDelay = 10000;            // Delay period to reset wifi
 
 
 
@@ -150,23 +126,19 @@ void setup ()
 
   // Start Serial port
   Serial.begin(115200);
- 
+   while (!Serial) 
+  {
+   ; // wait for serial port to connect. Needed for native USB port only
+  } // end while
+
+  WiFiFirmwareNotUpToDate();                 // Check to see if the WiFi Firmware is up to date 
+  // Initial attempt to connect to WiFi network:
+  status = WiFi.begin(ssid, pass);       // Connect to WPA/WPA2 network:
+  Serial.print("Attempting to connect to WPA SSID: ");
+  Serial.println(ssid);
+  
   // Initialize I2C communications as Master
-     Wire.begin();
-
-
-// Initialize WiFi at boot
-
-     WiFi.disconnect(true);
-     delay(1000);
-
-     WiFi.onEvent(Wifi_connected,SYSTEM_EVENT_STA_CONNECTED);
-     WiFi.onEvent(Get_IPAddress, SYSTEM_EVENT_STA_GOT_IP);
-     WiFi.onEvent(Wifi_disconnected, SYSTEM_EVENT_STA_DISCONNECTED); 
-     WiFi.begin(ssid, password);
-     Serial.println("Waiting for WIFI network...");
-
-
+  Wire.begin();
   
   // Start Real Time Clock
   rtc.begin();
@@ -182,11 +154,13 @@ void loop()
 {                                                                                                                             // Put your main code here, to run repeatedly 
  currentMillis = millis();                                                                                     // store the current time in millis
  currentUTC = TimeStampUTC();                                                                     // store the current datetime in UTC
- TimeAdjustments()                                                                                           // Perform Time Functions - Did the Millis reset this loop?  Update NTP 
+ TimeAdjustments();                                                                                           // Perform Time Functions - Did the Millis reset this loop?  Update NTP 
+ IsWiFiGood();
 
-getWinButtonPinValue();  
-compareWinButtonState();
-changeWindowLight(); 
+
+ getWinButtonPinValue();  
+ compareWinButtonState();
+ changeWindowLight(); 
 
 }  // end loop
 
@@ -390,43 +364,19 @@ Void DataSendToSlave()   // I2C Code
 //
 //  WiFi Functions 
 //
-// Using WiFi.onEvent() function for all the three WIFI Events. 
-// These will be SYSTEM_EVENT_STA_CONNECTED, SYSTEM_EVENT_STA_GOT_IP and SYSTEM_EVENT_STA_DISCONNECTED. 
-// We will individually pass them as the second parameters inside the WiFi.onEvent() function. 
-// The previously user defined functions will act as the first parameters.
-//  https://techtutorialsx.com/2019/08/15/esp32-arduino-getting-wifi-event-information/
-// https://microcontrollerslab.com/reconnect-esp32-to-wifi-after-lost-connection/
+
+void IsWiFiGood()  // check the network connection once every WiFiDelay seconds:
+  { 
+    if (currentMillis - previousWiFiMillis >= WiFiDelay)           // If Time delay for checking NTP Server has elapsed
+    {
+      ConnectToWiFi();                                                                           // Get epoch Set time to NTP Server
+      previousWiFiMillis = currentMillis;                  // Reset WiFi time delay counter
+    }  // end if 
+  } // end IsWiFiGood
+
 //
+// The rest of the functions are in MyWiFi.h if they work.  If not, paste them in here
 //
-// Broadly speaking, the WifiGenericClass library must be designed so that certain events are automatically handled by the library. 
-// When one of these events happen, it looks through the cbEventList to see if any callback functions have been registered for that event. 
-// If there is any, it executes them to handle the event. 
-// onEvent is not executing the function, it's simply adding it to the list so that it will be called the next time that event happens.
-// https://forum.arduino.cc/t/callback-function-without-brackets/616044/10
-//
-
-void Wifi_connected(WiFiEvent_t event, WiFiEventInfo_t info)
-{
-  Serial.println("Successfully connected to Access Point");
-} // end Wifi_connected
-
-void Get_IPAddress(WiFiEvent_t event, WiFiEventInfo_t info)
-{
-  Serial.println("WIFI is connected!");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-}  // end Get_IPAddress
-
-void Wifi_disconnected(WiFiEvent_t event, WiFiEventInfo_t info)
-{
-  Serial.println("Disconnected from WIFI access point");
-  Serial.print("WiFi lost connection. Reason: ");
-  Serial.println(info.disconnected.reason);
-  Serial.println("Reconnecting...");
-  WiFi.begin(ssid, pass);
-} // end Wifi_disconnected
-
-
 //
 //  end WiFi functions Section
 //  
