@@ -26,28 +26,7 @@
   // Time zone constant - change as required for your location
   const int GMT = 0;             //orig: "const int GMT = -5"    Using 0 to keep it UTC 
 
-//RTC Functions 
-void printTime()
-{
-  print2digits(rtc.getHours() + GMT);
-  Serial.print(":");
-  print2digits(rtc.getMinutes());
-  Serial.print(":");
-  print2digits(rtc.getSeconds());
-  Serial.println();
-} // end printTime
- 
-void printDate()
-{
-  Serial.print(rtc.getDay());
-  Serial.print("/");
-  Serial.print(rtc.getMonth());
-  Serial.print("/");
-  Serial.print(rtc.getYear());
-  Serial.print(" ");
-} // endprintDate
-
-// WiFi Functions 
+// WiFi  
 //
 // Enter your sensitive data in the Secret tab/arduino_secrets.h
 // 
@@ -56,8 +35,6 @@ char pass[] = SECRET_PASS;     // your network password (use for WPA, or use as 
 int status = WL_IDLE_STATUS;   // the WiFi radio's status
 unsigned long previousWiFiMillis = millis();
 const int  WiFiDelay = 10000;            // Delay period to reset wifi
-
-
 
 
 // Global Area (variables are local if declared within { } of loops/functions )
@@ -294,7 +271,26 @@ changeWindowLight()
 } // end changeWindowLight
 
 
-
+//RTC Functions 
+void printTime()
+{
+  print2digits(rtc.getHours() + GMT);
+  Serial.print(":");
+  print2digits(rtc.getMinutes());
+  Serial.print(":");
+  print2digits(rtc.getSeconds());
+  Serial.println();
+} // end printTime
+ 
+void printDate()
+{
+  Serial.print(rtc.getDay());
+  Serial.print("/");
+  Serial.print(rtc.getMonth());
+  Serial.print("/");
+  Serial.print(rtc.getYear());
+  Serial.print(" ");
+} // endprintDate
 
 void UpdateTimetoNTPServer()                                                            // Get epoch time from NTP Server and update RTC
 {
