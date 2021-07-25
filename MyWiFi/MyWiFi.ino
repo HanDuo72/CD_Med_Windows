@@ -47,13 +47,6 @@ void loop()
       ConnectToWiFi();                                                                           // Get epoch Set time to NTP Server
       previousMillis = currentMillis;                  // Reset WiFi time delay counter
   
-
-//      Serial.println();
-//      Serial.print("WiFi Status: ");
-//      Serial.println(WiFi.status());
-//      Serial.println();
-      printCurrentNet();
-      printWifiData();
    }  // end if 
 } // end loop
 
@@ -61,10 +54,13 @@ void ConnectToWiFi() // Determine if connected to WiFi and reconnect if not
 { 
   Serial.print("WiFi Status: ");
   Serial.println(WiFi.status());
+  Serial.println("");
   switch (WiFi.status())
     {
      case WL_CONNECTED:       // assigned when connected to a WiFi network;
         // No need to take any action connected to WIFi network
+        printCurrentNet();
+        printWifiData();
         break;
      case WL_AP_CONNECTED :   // assigned when a device is connected in Access Point mode;
         // Should not be connected in AP Mode.  Disconnect.
@@ -104,6 +100,8 @@ void ConnectToWiFi() // Determine if connected to WiFi and reconnect if not
         break;
      default:
         Serial.println("Default Case");
+        printCurrentNet();
+        printWifiData();
         break;
     } //end switch
  } //end ConnectToWiFi
