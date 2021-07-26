@@ -108,7 +108,7 @@ MyWiFi MyWiFi(true);
    unsigned long previousLCDMillis = millis();          // When Screen was LCD last changec
    const int  LCDDelay = 8000;                          // Delay period to change LCD Screen
    const int LCDCarouselScreenMax = 3;                      // Define total number of different Carousel screens
-   int LCDCarouselScreen;                               // Varialbe to keep current Carousel screen. 
+   int LCDCarouselScreen = 1;                               // Varialbe to keep current Carousel screen. 
 //
 //
 //
@@ -118,10 +118,13 @@ void setup ()
 {
 // Start Serial port
   Serial.begin(115200);
+ // /*
    while (!Serial) 
   {
    ; // wait for serial port to connect. Needed for native USB port only
   } // end while
+  // */
+   Serial.println ("Running Setup");
 //  
 // Initialize I2C communications as Master
   Wire.begin();
@@ -131,13 +134,14 @@ void setup ()
 //
 // Start the WiFi
   MyWiFi.WiFiFirmwareNotUpToDate();                    // Check to see if the WiFi Firmware is up to date 
-  MyWiFi.ConnectToWiFi();                              // Initial attempt to connect to WiFi network:
+  // MyWiFi.ConnectToWiFi();                              // Initial attempt to connect to WiFi network:
   //
   //  This is the older code - Try the function above to see if it works.  If it does, remove the commented out code
   //
-  // status = WiFi.begin(SECRET_SSID, SECRET_PASS);       // Connect to WPA/WPA2 network:
-  // Serial.print("Attempting to connect to WPA SSID: ");
-  // Serial.println(SECRET_SSID);
+   status = WiFi.begin(SECRET_SSID, SECRET_PASS);       // Connect to WPA/WPA2 network:
+   Serial.print("Attempting to connect to WPA SSID: ");
+   Serial.println(SECRET_SSID);
+   delay(8000);
 //
 // Start Real Time Clock
   rtc.begin();
@@ -151,11 +155,11 @@ void loop()                                         // Put your main code here, 
 { 
  currentMillis = millis();                          // store the current time in millis
  UpdateTimeStampUTC();                              // Update the TimeStampUTC to the current datetime in UTC
- currentUTC = DateTimeStampUTC;                         // store the current datetime in UTC
+ currentUTC = DateTimeStampUTC;                     // store the current datetime in UTC
  TimeAdjustments();                                 // Perform Time Functions - Did the Millis reset this loop?  Update NTP 
  IsWiFiGood();                                      // Determine if connected to WiFi and reconnect if not
  DisplayCarousel();
-
+ 
 /*
  getWinButtonPinValue();  
  compareWinButtonState();
@@ -357,24 +361,31 @@ void DisplayCarousel()
           case 1:
              lcd.setCursor(0,0);
              lcd.print("This is Screen 1");
+             Serial.println("This is Screen 1");
              lcd.setCursor(0,1);
              lcd.print("012345678901234567890");
+             Serial.println("012345678901234567890");             
              break;
           case 2:
              lcd.setCursor(0,0);
              lcd.print("This is Screen 2");
+             Serial.println("This is Screen 2");
              lcd.setCursor(0,1);
              lcd.print(DateTimeStampUTC);
+             Serial.println(DateTimeStampUTC);
              break;
           case 3:
              lcd.setCursor(0,0);
              lcd.print("This is Screen 3");
+             Serial.println("This is Screen 3");             
              lcd.setCursor(0,1);
              lcd.print(WiFi.localIP());
+             Serial.println(WiFi.localIP());
              // ButtonStateCurr[i] = "None"; WiFi.localIP()
              break;
           default:
              lcd.clear();
+             Serial.println("This is Default Case - Clear LCD Screen");                
              // Set LCD to blank - Clear
              break;
         }  // end switch
