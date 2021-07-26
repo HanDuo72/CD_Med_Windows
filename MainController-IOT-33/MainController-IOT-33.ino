@@ -9,6 +9,7 @@
 // https://forum.arduino.cc/t/leading-zeros-for-seconds-coding/357739/11
 //
 // Include required libraries
+#pragma once
 #include <SPI.h>
 #include <WiFiNINA.h>           // For WiFi
 #include <WiFiUdp.h>            // For NTP
@@ -24,6 +25,9 @@
   unsigned long UpdateToNTPDelay = 86400000;          // 1 day to update time.
   // Time zone constant - change as required for your location
   const int GMT = 0;                                  // orig: "const int GMT = -5"    Using 0 to keep it UTC 
+  unsigned long epoch;                                // Global Variable to represent epoch
+  int numberOfTries = 0, maxTries = 6;                // Variables for number of tries to NTP service
+  char TimeStampUTC[22]; 
 //
 // WiFi  
 //
@@ -34,6 +38,8 @@
  int status = WL_IDLE_STATUS;   // the WiFi radio's status
  unsigned long previousWiFiMillis = millis();
  const int  WiFiDelay = 10000;            // Delay period to reset wifi
+MyWiFi MyWiFi(true); 
+
 //
 //
 //
@@ -54,9 +60,13 @@
  const int WinButtonPin[numWindow] = {2,3,4,5,6,7};                                                                                                                    // declare what ANALOG IO Pin each window button is connected to as a constant
 //
 // declare and initialize button high and low readings
- const int buttonGreen[2] = {1,100};    // !!!!!! These need checked and updated !!!!!!
- const int buttonBlue[2] = {150,250};   // !!!!!! These need checked and updated !!!!!!
- const int buttonRed[2] = {300,400};    // !!!!!! These need checked and updated !!!!!!
+ const int buttonGreenMin = 1;    // !!!!!! These need checked and updated !!!!!!
+ const int buttonGreenMax = 100;    // !!!!!! These need checked and updated !!!!!!
+ const int buttonBlueMin = 150;   // !!!!!! These need checked and updated !!!!!!
+ const int buttonBlueMax = 250;   // !!!!!! These need checked and updated !!!!!!
+ const int buttonRedMin = 300;    // !!!!!! These need checked and updated !!!!!!
+ const int buttonRedMax = 400;    // !!!!!! These need checked and updated !!!!!!
+
 // use "None" as the default condition in the Case statement
 //
 //
@@ -72,9 +82,12 @@
  unsigned long currentMillis;                                    // Variable to store the number of milleseconds since the Arduino has started
  String currentUTC;                                              // Variable to store the current datetime in UTC
  const int PollIntervalMillis = 50;                              // Do not read pins if less than interval time for polling loop in ms
- unsigned long  LongPressMillis = 3000;                          // 3 second for long press  in ms
- unsigned long XLongPressMillis = 6000;                          // 6 second for xlong press  in ms
- unsigned long XXLongPressMillis = 10000;                        // 10 second for xxlong press  in ms
+ const unsigned long  LongPressMillisMin = 500;                  // .5 seconds for long press Min in ms
+ const unsigned long  LongPressMillisMax = 3000;                 // 3 seconds for long press Max in ms
+ const unsigned long XLongPressMillisMin = 3001;                 // 3.001 seconds for xlong press Min in ms
+ const unsigned long XLongPressMillisMax = 6000;                 // 6 seconds for xlong press Max in ms
+ const unsigned long XXLongPressMillisMin = 6001;                // 6.001 seconds for xxlong press Min in ms
+ const unsigned long XXLongPressMillisMax = 10000;               // 10 seconds for xxlong press Max in ms
 
  unsigned long ButtonLastPolledMillis[numWindow];                // Time in ms when we the button was last polled
  unsigned long ButtonPresssedMillis[numWindow];                  // Time in ms when we the button was pressed
@@ -89,9 +102,9 @@
  #define ANSWERSIZE 5                                   // Define Slave I2C answer size
  //
  // I2C LCD Screen
-   LiquidCrystal_I2C lcd(0x27, 16, 2);                    // Define LCD I2C Address and Screen size
-   unsigned long previousLCDMillis = millis();            // When Screen was LCD last changec
-   const int  LCDDelay = 8000;                            // Delay period to change LCD Screen
+   LiquidCrystal_I2C lcd(0x27, 16, 2);                  // Define LCD I2C Address and Screen size
+   unsigned long previousLCDMillis = millis();          // When Screen was LCD last changec
+   const int  LCDDelay = 8000;                          // Delay period to change LCD Screen
 //
 //
 //
@@ -113,7 +126,7 @@ void setup ()
     lcd.backlight();
 //
 // Start the WiFi
-  MyWiFi.WiFiFirmwareNotUpToDate();                 // Check to see if the WiFi Firmware is up to date 
+  MyWiFi.WiFiFirmwareNotUpToDate();                    // Check to see if the WiFi Firmware is up to date 
   MyWiFi.ConnectToWiFi();                              // Initial attempt to connect to WiFi network:
   //
   //  This is the older code - Try the function above to see if it works.  If it does, remove the commented out code
@@ -124,8 +137,6 @@ void setup ()
 //
 // Start Real Time Clock
   rtc.begin();
-  unsigned long epoch;                              // Global Variable to represent epoch
-  int numberOfTries = 0, maxTries = 6;              // Variables for number of tries to NTP service
   UpdateTimetoNTPServer();                          // Get epoch Set time to NTP Server
 
 } // End Setup (run once)
@@ -135,9 +146,10 @@ void setup ()
 void loop()                                         // Put your main code here, to run repeatedly 
 { 
  currentMillis = millis();                          // store the current time in millis
- currentUTC = TimeStampUTC();                       // store the current datetime in UTC
+ UpdateTimeStampUTC();                              // Update the TimeStampUTC to the current datetime in UTC
+ currentUTC = TimeStampUTC;                         // store the current datetime in UTC
  TimeAdjustments();                                 // Perform Time Functions - Did the Millis reset this loop?  Update NTP 
- MyWifi.IsWiFiGood();                               // Determine if connected to WiFi and reconnect if not
+ IsWiFiGood();                                      // Determine if connected to WiFi and reconnect if not
 
 
 /*
@@ -154,7 +166,7 @@ void TimeAdjustments()                              // Check to see if the Milli
 {
  if (currentMillis - ButtonLastPolledMillis[1] < 0)        // If the difference is negative number then the millis() have reset
      {
-     UpdateTimetoNTPServer()                               // Get epoch Set time to NTP Server
+     UpdateTimetoNTPServer();                               // Get epoch Set time to NTP Server
      for(int i = 0; i<numWindow; i++)       
           {
             ButtonStatePrev[i] == "None";                  // Reset all buttons previous state to not pressed - if currently pressed, it will be detected as a new press and recorded as such for the next loop through
@@ -165,7 +177,7 @@ void TimeAdjustments()                              // Check to see if the Milli
           } // end for
      }  // end if
 
-If (currentMillis - LastUpdatedToNTPMillis] >= UpdateToNTPDelay)           // If Time delay for checking NTP Server has elapsed
+ if (currentMillis - LastUpdatedToNTPMillis >= UpdateToNTPDelay)           // If Time delay for checking NTP Server has elapsed
      {
       UpdateTimetoNTPServer();                                                                            // Get epoch Set time to NTP Server
       LastUpdatedToNTPMillis == currentMillis;                                                 // Reset epoch time delay counter
@@ -194,13 +206,13 @@ void getWinButtonPinValue()                                                // Re
                     case 0:
                       ButtonStateCurr[i] = "None";
                       break;
-                    case buttonGreen[0] … buttonGreen[1]:
+                    case buttonGreenMin ...  buttonGreenMax:
                       ButtonStateCurr[i] = "Green";
                       break;
-                    case buttonBlue[0] … buttonBlue[1]:
+                    case buttonBlueMin ... buttonBlueMax:
                       ButtonStateCurr[i] = "Blue";
                       break;
-                    case buttonRed[0] … buttonRed[1]:
+                    case buttonRedMin ... buttonRedMax:
                       ButtonStateCurr[i] = "Red";
                       break;
                     default:
@@ -216,24 +228,23 @@ void compareWinButtonState()                                                    
 {
           for(int i = 0; i<numWindow; i++)
           {
-          if (ButtonStateCurr[i] == ButtonStatePrev[i])                                                  // If Previous and current states Match -
-            {                                                                                                                             //  Do nothing - Keep on Keeping on
-            } else if (ButtonStateCurr[i] == "None")                                                         //  If current doesn’t match previous and current state is "None" that means button has been released. 
-                 {
-                                                                                                                                           //Do Something Button was released. 
-                  ButtonPressedDuration[i] = currentMillis - ButtonPresssedMillis[i]   // Record total time button was pressed
+          if (ButtonStateCurr[i] == ButtonStatePrev[i])                            // If Previous and current states Match -
+            {   
+              ;                                                                    // Do nothing - Keep on Keeping on
+            } 
+            else if (ButtonStateCurr[i] == "None")                               // If current doesn’t match previous and current state is "None" that means button has been released. 
+                 {                                                                 //Do Something Button was released. 
+                  ButtonPressedDuration[i] = currentMillis - ButtonPresssedMillis[i];   // Record total time button was pressed
                  } // end else1
-            } else if (ButtonStateCurr[i] != "None")                                                          //  If current state is NOT "None" and doesn’t match previous - that means button has been pressed. 
-                 {
-                                                                                                                                         // Could have an issue if Previous was Blue and Current is Green - what would happen?
-                                                                                                                                          //Do Something - Button was pressed
-                  ButtonPresssedMillis[i] = currentMillis                                                   // Record button pressed millis
-                  ButtonPresssedUTC[i] = currentUTC                                                       // Record button pressed UTC
+            else if (ButtonStateCurr[i] != "None")                                                          //  If current state is NOT "None" and doesn’t match previous - that means button has been pressed. 
+                 {                                                                  // Do Something - Button was pressed
+                  ButtonPresssedMillis[i] = currentMillis;                          // Record button pressed millis
+                  ButtonPresssedUTC[i] = currentUTC;                                // Record button pressed UTC
+                   // Could have an issue if Previous was Blue and Current is Green - what would happen?
                  } // end else2
-
             } // end if 
 
-
+/*
 Yes - 
 No - Is Current None or !None  // Need to do something   
 If None - 
@@ -245,24 +256,25 @@ If None -
 
               }
           }  // end for
+*/
 }  // end compareWinButtonState
 
 
-changeWindowLight()
+void changeWindowLight()
 {
  for(int i = 0; i<numWindow; i++)
           {
            switch (ButtonPressedDuration[i])  
                   {
-                    case 1 … LongPressMillis:
+                    case LongPressMillisMin ... LongPressMillisMax:
                              // Action Here ;
                              break;
 
-                    case LongPressMillis … XLongPressMillis:
+                    case XLongPressMillisMin ... XLongPressMillisMax:
                              // Action Here ;
                              break;
 
-                    case XLongPressMillis … XXLongPressMillis:
+                    case XXLongPressMillisMin ... XXLongPressMillisMax:
                              // Action Here ;
                              break;
 
@@ -273,26 +285,21 @@ changeWindowLight()
           }  // end for
 } // end changeWindowLight
 
-
-//RTC Functions 
+//
+//
+//  RTC Functions 
+//
+//
 void printTime()
 {
-  print2digits(rtc.getHours() + GMT);
-  Serial.print(":");
-  print2digits(rtc.getMinutes());
-  Serial.print(":");
-  print2digits(rtc.getSeconds());
-  Serial.println();
+  sprintf (TimeStampUTC, "Time %02u:%02u:%02uZ", rtc.getHours() + GMT, rtc.getMinutes(), rtc.getSeconds());
+  // The “%02u” means “print an unsigned integer with 2 places, fill with leading zero if necessary”
 } // end printTime
  
 void printDate()
 {
-  Serial.print(rtc.getDay());
-  Serial.print("/");
-  Serial.print(rtc.getMonth());
-  Serial.print("/");
-  Serial.print(rtc.getYear());
-  Serial.print(" ");
+  sprintf (TimeStampUTC, "%04u/%02u/%02u", rtc.getYear(), rtc.getMonth(), rtc.getDay());
+  // The “%02u” means “print an unsigned integer with 2 places, fill with leading zero if necessary”
 } // endprintDate
 
 void UpdateTimetoNTPServer()                                                            // Get epoch time from NTP Server and update RTC
@@ -318,16 +325,14 @@ void UpdateTimetoNTPServer()                                                    
 
 
 
-string TimeStampUTC()                                     // Returns a UTC formatted string of the current datetime.
+void UpdateTimeStampUTC()                                     // Update a UTC formatted string of the current datetime.
 {
 // Return a string of the current UTC Time Stamp
 // 1994-11-05T13:15:30Z     From <https://www.w3.org/TR/NOTE-datetime> 
 // YYYY-MM-DDThh:mm:ssZ  <---the Z = UTC or Zulu/Zero time
- string buffer;
- sprintf (buffer, "%04u-%02u-%02uT%02u:%02u:%02uZ", rtc.getYear(), rtc.getMonth(), rtc.getDay(), rtc.getHours() , rtc.getMinutes(), rtc.getSeconds());
+ sprintf (TimeStampUTC, "%04u-%02u-%02uT%02u:%02u:%02uZ", rtc.getYear(), rtc.getMonth(), rtc.getDay(), rtc.getHours() , rtc.getMinutes(), rtc.getSeconds());
  // The “%02u” means “print an unsigned integer with 2 places, fill with leading zero if necessary”
- return buffer;
-} // end TimeStampUTC
+ } // end UpdateTimeStampUTC
 
 
 /*

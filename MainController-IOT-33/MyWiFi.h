@@ -19,14 +19,19 @@
 class MyWiFi
 {
 public:
-void ConnectToWiFi();              // Determine if connected to WiFi and reconnect if not
-void WiFiFirmwareNotUpToDate();
-void printWifiData(); 
-void printCurrentNet(); 
-void printMacAddress(byte mac[]);
-
-private: 
-int status = WL_IDLE_STATUS;   // the WiFi radio's status
+ // Constructor 
+   MyWiFi(bool displayMsg=false);     // Used to initialize the library and if nothing is specified by main code, pass false to Constructor)
+ // Methods
+   void begin(int baudRate=115200);   // If nothing is specified by main code, pass default baud rate to method 
+   void ConnectToWiFi();              // Determine if connected to WiFi and reconnect if not
+   void WiFiFirmwareNotUpToDate();
+   void printWifiData(); 
+   void printCurrentNet(); 
+   void printMacAddress(byte mac[]);
+ //
+ private: 
+   bool _msg;
+   int _status = WL_IDLE_STATUS;   // the WiFi radio's status
 
 }; // end class
 

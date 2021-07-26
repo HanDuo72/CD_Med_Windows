@@ -1,7 +1,7 @@
 /*
  Homemade WiFi Library 
  */
-
+#pragma once
 #include "Arduino.h"
 #include <SPI.h>
 #include <WiFiNINA.h>
@@ -46,6 +46,27 @@
 //   }  // end if 
 //} // end loop
 
+// Constructor
+MyWiFi::MyWiFi(bool displayMsg) 
+{
+  // Anything you need when instantiating your object goes here
+  _msg = displayMsg;
+} // End Constructor MyWiFi
+
+// this is our 'begin' function
+void MyWiFi::begin(int baudRate) {
+  if (!Serial) 
+  {
+     Serial.begin(baudRate);
+  } // end if
+  if (_msg) 
+  {
+     Serial.println("MyWiFi constructor instantiated (created) successfully.");
+  } // end if
+}
+
+
+
 void MyWiFi::ConnectToWiFi() // Determine if connected to WiFi and reconnect if not
 { 
   Serial.print("WiFi Status: ");
@@ -80,17 +101,17 @@ void MyWiFi::ConnectToWiFi() // Determine if connected to WiFi and reconnect if 
         // No need to take any action 
         break;
      case WL_CONNECT_FAILED:  // assigned when the connection fails for all the attempts;
-        status = WiFi.begin(SECRET_SSID, SECRET_PASS);       // Connect to WPA/WPA2 network:
+        _status = WiFi.begin(SECRET_SSID, SECRET_PASS);       // Connect to WPA/WPA2 network:
         Serial.print("Attempting to connect to WPA SSID: ");
         Serial.println(SECRET_SSID);
         break;
      case WL_CONNECTION_LOST: // assigned when the connection is lost;
-        status = WiFi.begin(SECRET_SSID, SECRET_PASS);       // Connect to WPA/WPA2 network:
+        _status = WiFi.begin(SECRET_SSID, SECRET_PASS);       // Connect to WPA/WPA2 network:
         Serial.print("Attempting to connect to WPA SSID: ");
         Serial.println(SECRET_SSID);
         break;
      case WL_DISCONNECTED:    // assigned when disconnected from a network;
-        status = WiFi.begin(SECRET_SSID, SECRET_PASS);       // Connect to WPA/WPA2 network:
+        _status = WiFi.begin(SECRET_SSID, SECRET_PASS);       // Connect to WPA/WPA2 network:
         Serial.print("Attempting to connect to WPA SSID: ");
         Serial.println(SECRET_SSID);
         break;
