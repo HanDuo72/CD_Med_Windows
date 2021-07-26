@@ -118,12 +118,13 @@ void setup ()
 {
 // Start Serial port
   Serial.begin(115200);
- // /*
+ /*
    while (!Serial) 
   {
    ; // wait for serial port to connect. Needed for native USB port only
   } // end while
-  // */
+  */
+
    Serial.println ("Running Setup");
 //  
 // Initialize I2C communications as Master
@@ -131,6 +132,9 @@ void setup ()
   //Start I2C LCD
     lcd.init();                                        // Start the I2C LCD 
     lcd.backlight();                                   // Turn on the Backlight of the I2C LCD
+  // Let the status known to the screen
+    lcd.setCursor(0,0);
+    lcd.print("Running Setup");
 //
 // Start the WiFi
   MyWiFi.WiFiFirmwareNotUpToDate();                    // Check to see if the WiFi Firmware is up to date 
@@ -141,12 +145,18 @@ void setup ()
    status = WiFi.begin(SECRET_SSID, SECRET_PASS);       // Connect to WPA/WPA2 network:
    Serial.print("Attempting to connect to WPA SSID: ");
    Serial.println(SECRET_SSID);
-   delay(8000);
+   lcd.setCursor(0,0);
+   lcd.print("Connecting to: ");
+   lcd.setCursor(0,1);
+   lcd.print(SECRET_SSID);
+   delay(10000);
 //
 // Start Real Time Clock
   rtc.begin();
   UpdateTimetoNTPServer();                          // Get epoch Set time to NTP Server
-
+   Serial.println("Starting RTC");
+   lcd.setCursor(0,0);
+   lcd.print("Starting RTC");
 } // End Setup (run once)
 
 
@@ -154,7 +164,7 @@ void setup ()
 void loop()                                         // Put your main code here, to run repeatedly 
 { 
  currentMillis = millis();                          // store the current time in millis
- UpdateTimeStampUTC();                              // Update the TimeStampUTC to the current datetime in UTC
+ UpdateDateTimeStampUTC();                          // Update the TimeStampUTC to the current datetime in UTC
  currentUTC = DateTimeStampUTC;                     // store the current datetime in UTC
  TimeAdjustments();                                 // Perform Time Functions - Did the Millis reset this loop?  Update NTP 
  IsWiFiGood();                                      // Determine if connected to WiFi and reconnect if not
@@ -174,7 +184,10 @@ void TimeAdjustments()                              // Check to see if the Milli
 {
  if (currentMillis - ButtonLastPolledMillis[1] < 0)        // If the difference is negative number then the millis() have reset
      {
-     UpdateTimetoNTPServer();                               // Get epoch Set time to NTP Server
+       Serial.println("Millis Reset");    
+       lcd.setCursor(0,0);
+       lcd.print("Millis Reset");
+       UpdateTimetoNTPServer();                               // Get epoch Set time to NTP Server
      for(int i = 0; i<numWindow; i++)       
           {
             ButtonStatePrev[i] == "None";                  // Reset all buttons previous state to not pressed - if currently pressed, it will be detected as a new press and recorded as such for the next loop through
@@ -298,7 +311,7 @@ void changeWindowLight()
 //  RTC Functions 
 //
 //
-void UpdateTimeStampUTC()                                     // Update a UTC formatted string of the current datetime.
+void UpdateDateTimeStampUTC()                                     // Update a UTC formatted string of the current datetime.
   {
     // Return a string of the current UTC Time Stamp
     // 1994-11-05T13:15:30Z     From <https://www.w3.org/TR/NOTE-datetime> 
@@ -354,7 +367,7 @@ void DisplayCarousel()
           LCDCarouselScreen = 1;                                // Reset to First screen if currently at last screen
         } else
         {
-          LCDCarouselScreen = LCDCarouselScreen++;              // Go to next screen in sequenece
+          LCDCarouselScreen++;                                  // Go to next screen in sequenece
         } // end if...esle 
       switch (LCDCarouselScreen)                                // Define each LCD Screen
         {
@@ -389,7 +402,7 @@ void DisplayCarousel()
              // Set LCD to blank - Clear
              break;
         }  // end switch
-      previousLCDMillis == currentMillis;                       // Reset LCD Carousel  time delay counter
+      previousLCDMillis = currentMillis;                       // Reset LCD Carousel  time delay counter
      }  // end if
 } // end DisplayCarousel
 
