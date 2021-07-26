@@ -107,6 +107,8 @@ MyWiFi MyWiFi(true);
    LiquidCrystal_I2C lcd(0x27, 16, 2);                  // Define LCD I2C Address and Screen size
    unsigned long previousLCDMillis = millis();          // When Screen was LCD last changec
    const int  LCDDelay = 8000;                          // Delay period to change LCD Screen
+   const int LCDCarouselScreenMax = 3;                      // Define total number of different Carousel screens
+   int LCDCarouselScreen;                               // Varialbe to keep current Carousel screen. 
 //
 //
 //
@@ -124,8 +126,8 @@ void setup ()
 // Initialize I2C communications as Master
   Wire.begin();
   //Start I2C LCD
-    lcd.init();
-    lcd.backlight();
+    lcd.init();                                        // Start the I2C LCD 
+    lcd.backlight();                                   // Turn on the Backlight of the I2C LCD
 //
 // Start the WiFi
   MyWiFi.WiFiFirmwareNotUpToDate();                    // Check to see if the WiFi Firmware is up to date 
@@ -152,7 +154,7 @@ void loop()                                         // Put your main code here, 
  currentUTC = DateTimeStampUTC;                         // store the current datetime in UTC
  TimeAdjustments();                                 // Perform Time Functions - Did the Millis reset this loop?  Update NTP 
  IsWiFiGood();                                      // Determine if connected to WiFi and reconnect if not
-
+ DisplayCarousel();
 
 /*
  getWinButtonPinValue();  
@@ -336,6 +338,49 @@ void UpdateTimetoNTPServer()                                                    
 //
 //
 //
+//  LCD Screen Functions 
+//     Carousel 
+//
+void DisplayCarousel()
+{
+   if (currentMillis - previousLCDMillis >= LCDDelay)           // If Time delay for updating LCD Carousel screen has elapsed
+     {                                                          // Update to next screen
+      if (LCDCarouselScreen == LCDCarouselScreenMax)
+        {
+          LCDCarouselScreen = 1;                                // Reset to First screen if currently at last screen
+        } else
+        {
+          LCDCarouselScreen = LCDCarouselScreen++;              // Go to next screen in sequenece
+        } // end if...esle 
+      switch (LCDCarouselScreen)                                // Define each LCD Screen
+        {
+          case 1:
+             lcd.setCursor(0,0);
+             lcd.print("This is Screen 1");
+             lcd.setCursor(0,1);
+             lcd.print("012345678901234567890");
+             break;
+          case 2:
+             lcd.setCursor(0,0);
+             lcd.print("This is Screen 2");
+             lcd.setCursor(0,1);
+             lcd.print(DateTimeStampUTC);
+             break;
+          case 3:
+             lcd.setCursor(0,0);
+             lcd.print("This is Screen 3");
+             lcd.setCursor(0,1);
+             lcd.print(WiFi.localIP());
+             // ButtonStateCurr[i] = "None"; WiFi.localIP()
+             break;
+          default:
+             lcd.clear();
+             // Set LCD to blank - Clear
+             break;
+        }  // end switch
+      previousLCDMillis == currentMillis;                       // Reset LCD Carousel  time delay counter
+     }  // end if
+} // end DisplayCarousel
 
 
 
