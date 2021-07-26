@@ -46,7 +46,7 @@
 //   }  // end if 
 //} // end loop
 
-void MyWiFi::IsWiFiGood() // Determine if connected to WiFi and reconnect if not
+void MyWiFi::ConnectToWiFi() // Determine if connected to WiFi and reconnect if not
 { 
   Serial.print("WiFi Status: ");
   Serial.println(WiFi.status());

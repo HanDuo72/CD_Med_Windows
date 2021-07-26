@@ -19,7 +19,7 @@
 class MyWiFi
 {
 public:
-void IsWiFiGood(); // Determine if connected to WiFi and reconnect if not
+void ConnectToWiFi();              // Determine if connected to WiFi and reconnect if not
 void WiFiFirmwareNotUpToDate();
 void printWifiData(); 
 void printCurrentNet(); 

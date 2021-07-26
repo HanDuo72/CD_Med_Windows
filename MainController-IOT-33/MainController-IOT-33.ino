@@ -7,40 +7,40 @@
 // https://www.arduino.cc/en/Reference/RTC
 // https://www.programmingelectronics.com/sprintf-arduino/
 // https://forum.arduino.cc/t/leading-zeros-for-seconds-coding/357739/11
-
-
+//
 // Include required libraries
 #include <SPI.h>
 #include <WiFiNINA.h>           // For WiFi
 #include <WiFiUdp.h>            // For NTP
 #include <RTCZero.h>            // For RTC functions
 #include <Wire.h>               // Include Arduino Wire library for I2C
-#include" MyWiFiSecrets.h"      // Defines SSDI and Password for Wifi
+#include <LiquidCrystal_I2C.h>  // Include Library for I2C LCD Screen
+#include "MyWiFiSecrets.h"      // Defines SSDI and Password for Wifi
 #include "MyWiFi.h"             // Defines my Wifi Functions 
-
+//
 // Real Time Clock
   RTCZero rtc;
-  unsigned long LastUpdatedToNTPMillis;                               // Time in ms when we the RTC was last updated to a NTP Server
-  unsigned long UpdateToNTPDelay = 86400000;                  // 1 day to update time.
-
+  unsigned long LastUpdatedToNTPMillis;               // Time in ms when we the RTC was last updated to a NTP Server
+  unsigned long UpdateToNTPDelay = 86400000;          // 1 day to update time.
   // Time zone constant - change as required for your location
-  const int GMT = 0;             //orig: "const int GMT = -5"    Using 0 to keep it UTC 
-
+  const int GMT = 0;                                  // orig: "const int GMT = -5"    Using 0 to keep it UTC 
+//
 // WiFi  
 //
 // Enter your sensitive data in the Secret tab/arduino_secrets.h
 // 
 // char ssid[] = SECRET_SSID;     // your network SSID (name) 
 // char pass[] = SECRET_PASS;     // your network password (use for WPA, or use as key for WEP)
-int status = WL_IDLE_STATUS;   // the WiFi radio's status
-unsigned long previousWiFiMillis = millis();
-const int  WiFiDelay = 10000;            // Delay period to reset wifi
-
-
+ int status = WL_IDLE_STATUS;   // the WiFi radio's status
+ unsigned long previousWiFiMillis = millis();
+ const int  WiFiDelay = 10000;            // Delay period to reset wifi
+//
+//
+//
 // Global Area (variables are local if declared within { } of loops/functions )
-
+//
 // Window Settings
-const int numWindow = 6; // declare and initalize the number of windows as a constant 
+ const int numWindow = 6; // declare and initalize the number of windows as a constant 
 //declare and initialize WinX for array reference purposes 
 //This may not be necessary if not, can remove later
      int Win1 = 0;
@@ -50,41 +50,40 @@ const int numWindow = 6; // declare and initalize the number of windows as a con
      int Win5 = 4;
      int Win6 = 5;
 
-const String WinName[numWindow] = {"Window1","Window2","Window3","Window4","Window5","Window6"};      //how do I know I always process in window order?
-const int WinButtonPin[numWindow] = {2,3,4,5,6,7};                                                                                                                    // declare what ANALOG IO Pin each window button is connected to as a constant
-
+ const String WinName[numWindow] = {"Window1","Window2","Window3","Window4","Window5","Window6"};      //how do I know I always process in window order?
+ const int WinButtonPin[numWindow] = {2,3,4,5,6,7};                                                                                                                    // declare what ANALOG IO Pin each window button is connected to as a constant
+//
 // declare and initialize button high and low readings
-const int buttonGreen[2] = {LOW#,HIGH#}
-const int buttonBlue[2] = {LOW#,HIGH#}
-const int buttonRed[2] = {LOW#,HIGH#}
+ const int buttonGreen[2] = {1,100};    // !!!!!! These need checked and updated !!!!!!
+ const int buttonBlue[2] = {150,250};   // !!!!!! These need checked and updated !!!!!!
+ const int buttonRed[2] = {300,400};    // !!!!!! These need checked and updated !!!!!!
 // use "None" as the default condition in the Case statement
-
-
+//
+//
 // Internet Post Settings
   char ServerAddress[] = "www.elithecomputerguy.com";
   int ServerPort = 80;
   String postData;
   String postVariable = "temp=";                                // Create a variable to hold the payload - will need to e-rexamine this and customize
-  WiFiClient client;                                                        // Creates a client that can connect to to a specified internet IP address and port as defined in client.connect().
-
-
+  WiFiClient client;                                            // Creates a client that can connect to to a specified internet IP address and port as defined in client.connect().
+//
+//
 // Timing settings
-unsigned long currentMillis;                                     // Variable to store the number of milleseconds since the Arduino has started
-String currentUTC;                                                      // Variable to store the current datetime in UTC
-const int PollIntervalMillis = 50;                               // Do not read pins if less than interval time for polling loop in ms
-unsigned long  LongPressMillis = 3000;                  // 3 second for long press  in ms
-unsigned long XLongPressMillis = 6000;                 // 6 second for xlong press  in ms
-unsigned long XXLongPressMillis = 10000;             // 10 second for xxlong press  in ms
+ unsigned long currentMillis;                                    // Variable to store the number of milleseconds since the Arduino has started
+ String currentUTC;                                              // Variable to store the current datetime in UTC
+ const int PollIntervalMillis = 50;                              // Do not read pins if less than interval time for polling loop in ms
+ unsigned long  LongPressMillis = 3000;                          // 3 second for long press  in ms
+ unsigned long XLongPressMillis = 6000;                          // 6 second for xlong press  in ms
+ unsigned long XXLongPressMillis = 10000;                        // 10 second for xxlong press  in ms
 
- 
-unsigned long ButtonLastPolledMillis[numWindow];          // Time in ms when we the button was last polled
-unsigned long ButtonPresssedMillis[numWindow];            // Time in ms when we the button was pressed
-String ButtonPresssedUTC[numWindow];                             // datetime in UTC when we the button was pressed
-unsigned long ButtonPressedDuration[numWindow];       // Total time the button was pressed in ms. Non-Zero value means button was pressed
-String ButtonStateCurr[numWindow];                                   // Reflect the current read state of the button
-String ButtonStatePrev[numWindow];                                   // Reflect the previous read state of the button
-
-
+ unsigned long ButtonLastPolledMillis[numWindow];                // Time in ms when we the button was last polled
+ unsigned long ButtonPresssedMillis[numWindow];                  // Time in ms when we the button was pressed
+ String ButtonPresssedUTC[numWindow];                            // datetime in UTC when we the button was pressed
+ unsigned long ButtonPressedDuration[numWindow];                 // Total time the button was pressed in ms. Non-Zero value means button was pressed
+ String ButtonStateCurr[numWindow];                              // Reflect the current read state of the button
+ String ButtonStatePrev[numWindow];                              // Reflect the previous read state of the button
+//
+//
 // I2C Communications
  const int SLAVE_ADDR[numWindow]  = {9,3,4,5,6,7};      // Define Slave I2C Address
  #define ANSWERSIZE 5                                   // Define Slave I2C answer size
@@ -93,10 +92,9 @@ String ButtonStatePrev[numWindow];                                   // Reflect 
    LiquidCrystal_I2C lcd(0x27, 16, 2);                    // Define LCD I2C Address and Screen size
    unsigned long previousLCDMillis = millis();            // When Screen was LCD last changec
    const int  LCDDelay = 8000;                            // Delay period to change LCD Screen
-
-
-
-
+//
+//
+//
 
 
 void setup ()
@@ -107,59 +105,62 @@ void setup ()
   {
    ; // wait for serial port to connect. Needed for native USB port only
   } // end while
-//
-//Start I2C LCD
-  lcd.init();
-  lcd.backlight();
-
-  MyWiFi.WiFiFirmwareNotUpToDate();                 // Check to see if the WiFi Firmware is up to date 
-  // Initial attempt to connect to WiFi network:
-  status = WiFi.begin(SECRET_SSID, SECRET_PASS);       // Connect to WPA/WPA2 network:
-  Serial.print("Attempting to connect to WPA SSID: ");
-  Serial.println(SECRET_SSID);
-  
-  // Initialize I2C communications as Master
+//  
+// Initialize I2C communications as Master
   Wire.begin();
-  
-  // Start Real Time Clock
+  //Start I2C LCD
+    lcd.init();
+    lcd.backlight();
+//
+// Start the WiFi
+  MyWiFi.WiFiFirmwareNotUpToDate();                 // Check to see if the WiFi Firmware is up to date 
+  MyWiFi.ConnectToWiFi();                              // Initial attempt to connect to WiFi network:
+  //
+  //  This is the older code - Try the function above to see if it works.  If it does, remove the commented out code
+  //
+  // status = WiFi.begin(SECRET_SSID, SECRET_PASS);       // Connect to WPA/WPA2 network:
+  // Serial.print("Attempting to connect to WPA SSID: ");
+  // Serial.println(SECRET_SSID);
+//
+// Start Real Time Clock
   rtc.begin();
-  unsigned long epoch;                                     // Global Variable to represent epoch
-  int numberOfTries = 0, maxTries = 6;          // Variables for number of tries to NTP service
-  UpdateTimetoNTPServer()                            // Get epoch Set time to NTP Server
+  unsigned long epoch;                              // Global Variable to represent epoch
+  int numberOfTries = 0, maxTries = 6;              // Variables for number of tries to NTP service
+  UpdateTimetoNTPServer();                          // Get epoch Set time to NTP Server
 
 } // End Setup (run once)
 
 
 
-void loop()                                                                         
-{                                                                                                                             // Put your main code here, to run repeatedly 
- currentMillis = millis();                                                                                     // store the current time in millis
+void loop()                                         // Put your main code here, to run repeatedly 
+{ 
+ currentMillis = millis();                          // store the current time in millis
  currentUTC = TimeStampUTC();                       // store the current datetime in UTC
- TimeAdjustments();                                                                                           // Perform Time Functions - Did the Millis reset this loop?  Update NTP 
- MyWifi.IsWiFiGood();                              // Determine if connected to WiFi and reconnect if not
+ TimeAdjustments();                                 // Perform Time Functions - Did the Millis reset this loop?  Update NTP 
+ MyWifi.IsWiFiGood();                               // Determine if connected to WiFi and reconnect if not
 
 
+/*
  getWinButtonPinValue();  
  compareWinButtonState();
  changeWindowLight(); 
-
+*/
 }  // end loop
 
-
-void TimeAdjustments() // Check to see if the Millis have reset and if so reset/clear pressed states
-{
+//
 // Every 47 days or so the MILLIS reset to 0 and any pending actions will fail 
 // Clear all current presses - will result in an odd result for staff - but this will be a very infrequent occurrence 
-
- if (currentMillis - ButtonLastPolledMillis[1] < 0)                                        // If the difference is negative number then the millis() have reset
+void TimeAdjustments()                              // Check to see if the Millis have reset and if so reset/clear pressed states
+{
+ if (currentMillis - ButtonLastPolledMillis[1] < 0)        // If the difference is negative number then the millis() have reset
      {
-     UpdateTimetoNTPServer()                                                                        // Get epoch Set time to NTP Server
+     UpdateTimetoNTPServer()                               // Get epoch Set time to NTP Server
      for(int i = 0; i<numWindow; i++)       
           {
-            ButtonStatePrev[i] == "None";                                                            // Reset all buttons previous state to not pressed - if currently pressed, it will be detected as a new press and recorded as such for the next loop through
+            ButtonStatePrev[i] == "None";                  // Reset all buttons previous state to not pressed - if currently pressed, it will be detected as a new press and recorded as such for the next loop through
             ButtonLastPolledMillis[i] = currentMillis;
-            ButtonPresssedMillis[i] == 0;                                                               // Check this - I don't think this causes a logic problem - but it might. Because only is written when a change is detected so 0 shouldn't matter until press 
-                                                                                                                              // is detected and then the 0 will be overwritten
+            ButtonPresssedMillis[i] == 0;                  // Check this - I don't think this causes a logic problem - but it might. Because only is written when a change is detected so 0 shouldn't matter until press 
+                                                           // is detected and then the 0 will be overwritten
             ButtonPresssedUTC[i] == "";
           } // end for
      }  // end if
@@ -172,20 +173,18 @@ If (currentMillis - LastUpdatedToNTPMillis] >= UpdateToNTPDelay)           // If
 } // end  TimeAdjustments()
 
 
-void getWinButtonPinValue()                                                                            // Reads every button pin, determines the current state, preserves previous state
+void getWinButtonPinValue()                                                // Reads every button pin, determines the current state, preserves previous state
 {
-
-
- if (currentMillis - ButtonLastPolledMillis[1] >= PollIntervalMillis)             // Only take a reading if the Poll interval has elapsed since last read.
+ if (currentMillis - ButtonLastPolledMillis[1] >= PollIntervalMillis)      // Only take a reading if the Poll interval has elapsed since last read.
      {
-     int WinButtonPinValue[numWindow];                                                       // Declare temp array for to hold each Window's Button Pin Values
+     int WinButtonPinValue[numWindow];                                     // Declare temp array for to hold each Window's Button Pin Values
 
-          for(int i = 0; i<numWindow; i++)                                                           // Loop to get value of the WinButtonPinValue for each Window
+          for(int i = 0; i<numWindow; i++)                                 // Loop to get value of the WinButtonPinValue for each Window
           {
-            WinButtonPinValue[i] = analogRead(WinButtonPin[i]);                 // Get Value on ButtonX Pin
+            WinButtonPinValue[i] = analogRead(WinButtonPin[i]);            // Get Value on ButtonX Pin
 
-             ButtonLastPolledMillis[i] = currentMillis;                                        // Set last polled millis to current millis for next loop 
-             ButtonStatePrev[i] = ButtonStateCurr[i];                                        // Copy existing Current State of ButtonX to Previous State of button - prepare to receive new value
+             ButtonLastPolledMillis[i] = currentMillis;                    // Set last polled millis to current millis for next loop 
+             ButtonStatePrev[i] = ButtonStateCurr[i];                      // Copy existing Current State of ButtonX to Previous State of button - prepare to receive new value
              //
              // Set the Current State of the Button
              // Color if pressed, "None" if not 
@@ -319,7 +318,7 @@ void UpdateTimetoNTPServer()                                                    
 
 
 
-string TimeStampUTC()                                                          // Returns a UTC formatted string of the current datetime.
+string TimeStampUTC()                                     // Returns a UTC formatted string of the current datetime.
 {
 // Return a string of the current UTC Time Stamp
 // 1994-11-05T13:15:30Z     From <https://www.w3.org/TR/NOTE-datetime> 
@@ -331,10 +330,9 @@ string TimeStampUTC()                                                          /
 } // end TimeStampUTC
 
 
-
+/*
 Void DataSendToSlave()   // I2C Code
 {
-
   // Write a character to the Slave
   Wire.beginTransmission(SLAVE_ADDR[i]);    // must be in a for loop i
   Wire.write(0);
@@ -358,7 +356,7 @@ Void DataSendToSlave()   // I2C Code
 
 
 } // End DataSendToSlave
-
+*/
 
 
 //
@@ -369,7 +367,7 @@ void IsWiFiGood()  // check the network connection once every WiFiDelay seconds:
   { 
     if (currentMillis - previousWiFiMillis >= WiFiDelay)           // If Time delay for checking NTP Server has elapsed
     {
-      ConnectToWiFi();                                                                           // Get epoch Set time to NTP Server
+      MyWiFi.ConnectToWiFi();                                                                           // Get epoch Set time to NTP Server
       previousWiFiMillis = currentMillis;                  // Reset WiFi time delay counter
     }  // end if 
   } // end IsWiFiGood
