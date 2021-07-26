@@ -86,10 +86,13 @@ String ButtonStatePrev[numWindow];                                   // Reflect 
 
 
 // I2C Communications
-const int SLAVE_ADDR[numWindow]  = {9,3,4,5,6,7};      // Define Slave I2C Address
-#define ANSWERSIZE 5     // Define Slave I2C answer size
-
-
+ const int SLAVE_ADDR[numWindow]  = {9,3,4,5,6,7};      // Define Slave I2C Address
+ #define ANSWERSIZE 5                                   // Define Slave I2C answer size
+ //
+ // I2C LCD Screen
+   LiquidCrystal_I2C lcd(0x27, 16, 2);                    // Define LCD I2C Address and Screen size
+   unsigned long previousLCDMillis = millis();            // When Screen was LCD last changec
+   const int  LCDDelay = 8000;                            // Delay period to change LCD Screen
 
 
 
@@ -98,15 +101,16 @@ const int SLAVE_ADDR[numWindow]  = {9,3,4,5,6,7};      // Define Slave I2C Addre
 
 void setup ()
 {
-
-// put your setup code here, to run once
-
-  // Start Serial port
+// Start Serial port
   Serial.begin(115200);
    while (!Serial) 
   {
    ; // wait for serial port to connect. Needed for native USB port only
   } // end while
+//
+//Start I2C LCD
+  lcd.init();
+  lcd.backlight();
 
   MyWiFi.WiFiFirmwareNotUpToDate();                 // Check to see if the WiFi Firmware is up to date 
   // Initial attempt to connect to WiFi network:
