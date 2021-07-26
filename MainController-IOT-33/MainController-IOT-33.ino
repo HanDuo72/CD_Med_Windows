@@ -27,7 +27,9 @@
   const int GMT = 0;                                  // orig: "const int GMT = -5"    Using 0 to keep it UTC 
   unsigned long epoch;                                // Global Variable to represent epoch
   int numberOfTries = 0, maxTries = 6;                // Variables for number of tries to NTP service
-  char TimeStampUTC[22]; 
+  char DateTimeStampUTC[22];
+  char DateStamp[10]; 
+  char TimeStamp[10]; 
 //
 // WiFi  
 //
@@ -147,7 +149,7 @@ void loop()                                         // Put your main code here, 
 { 
  currentMillis = millis();                          // store the current time in millis
  UpdateTimeStampUTC();                              // Update the TimeStampUTC to the current datetime in UTC
- currentUTC = TimeStampUTC;                         // store the current datetime in UTC
+ currentUTC = DateTimeStampUTC;                         // store the current datetime in UTC
  TimeAdjustments();                                 // Perform Time Functions - Did the Millis reset this loop?  Update NTP 
  IsWiFiGood();                                      // Determine if connected to WiFi and reconnect if not
 
@@ -290,30 +292,39 @@ void changeWindowLight()
 //  RTC Functions 
 //
 //
-void printTime()
-{
-  sprintf (TimeStampUTC, "Time %02u:%02u:%02uZ", rtc.getHours() + GMT, rtc.getMinutes(), rtc.getSeconds());
-  // The “%02u” means “print an unsigned integer with 2 places, fill with leading zero if necessary”
-} // end printTime
- 
-void printDate()
-{
-  sprintf (TimeStampUTC, "%04u/%02u/%02u", rtc.getYear(), rtc.getMonth(), rtc.getDay());
-  // The “%02u” means “print an unsigned integer with 2 places, fill with leading zero if necessary”
-} // endprintDate
-
-void UpdateTimetoNTPServer()                                                            // Get epoch time from NTP Server and update RTC
-{
-  do 
+void UpdateTimeStampUTC()                                     // Update a UTC formatted string of the current datetime.
   {
-    epoch = WiFi.getTime();                                                                      // Get Epoch value from NTP Server
-    numberOfTries++;
-  } while ((epoch == 0) && (numberOfTries < maxTries));
+    // Return a string of the current UTC Time Stamp
+    // 1994-11-05T13:15:30Z     From <https://www.w3.org/TR/NOTE-datetime> 
+    // YYYY-MM-DDThh:mm:ssZ  <---the Z = UTC or Zulu/Zero time
+    sprintf (DateTimeStampUTC, "%04u-%02u-%02uT%02u:%02u:%02uZ", rtc.getYear(), rtc.getMonth(), rtc.getDay(), rtc.getHours() , rtc.getMinutes(), rtc.getSeconds());
+    // The “%02u” means “print an unsigned integer with 2 places, fill with leading zero if necessary”
+  } // end UpdateTimeStampUTC
+//
+void UpdateTimeStamp()   // was printTime
+  {
+    sprintf (TimeStamp, "Time %02u:%02u:%02uZ", rtc.getHours() + GMT, rtc.getMinutes(), rtc.getSeconds());
+    // The “%02u” means “print an unsigned integer with 2 places, fill with leading zero if necessary”
+  } // end printTime
+// 
+void UpdateDateStamp()  //printDate
+  {
+    sprintf (DateStamp, "%04u/%02u/%02u", rtc.getYear(), rtc.getMonth(), rtc.getDay());
+    // The “%02u” means “print an unsigned integer with 2 places, fill with leading zero if necessary”
+  } // endprintDate
+//
+void UpdateTimetoNTPServer()                                                            // Get epoch time from NTP Server and update RTC
+  {
+    do 
+    {
+      epoch = WiFi.getTime();                                                                      // Get Epoch value from NTP Server
+      numberOfTries++;
+    } while ((epoch == 0) && (numberOfTries < maxTries));
  
-   if (numberOfTries == maxTries) 
-   {
-    Serial.print("NTP unreachable!!");
-    while (1);
+    if (numberOfTries == maxTries) 
+    {
+      Serial.print("NTP unreachable!!");
+      while (1);
     } else 
       {
        Serial.print("Epoch received: ");
@@ -322,17 +333,10 @@ void UpdateTimetoNTPServer()                                                    
        Serial.println();
     }  // end if…else
 } // end UpdateTimetoNTPServer
+//
+//
+//
 
-
-
-void UpdateTimeStampUTC()                                     // Update a UTC formatted string of the current datetime.
-{
-// Return a string of the current UTC Time Stamp
-// 1994-11-05T13:15:30Z     From <https://www.w3.org/TR/NOTE-datetime> 
-// YYYY-MM-DDThh:mm:ssZ  <---the Z = UTC or Zulu/Zero time
- sprintf (TimeStampUTC, "%04u-%02u-%02uT%02u:%02u:%02uZ", rtc.getYear(), rtc.getMonth(), rtc.getDay(), rtc.getHours() , rtc.getMinutes(), rtc.getSeconds());
- // The “%02u” means “print an unsigned integer with 2 places, fill with leading zero if necessary”
- } // end UpdateTimeStampUTC
 
 
 /*
