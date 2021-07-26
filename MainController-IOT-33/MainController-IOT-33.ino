@@ -328,7 +328,7 @@ void UpdateTimeStamp()   // was printTime
 // 
 void UpdateDateStamp()  //printDate
   {
-    sprintf (DateStamp, "%04u/%02u/%02u", rtc.getYear(), rtc.getMonth(), rtc.getDay());
+    sprintf (DateStamp, "Date %02u/%02u/%04u", rtc.getMonth(), rtc.getDay(), rtc.getYear());
     // The “%02u” means “print an unsigned integer with 2 places, fill with leading zero if necessary”
   } // endprintDate
 //
@@ -381,13 +381,14 @@ void DisplayCarousel()
              break;
           case 2:
              lcd.setCursor(0,0);
-             lcd.print("This is Screen 2");
-             Serial.println("This is Screen 2");
+             lcd.print(DateStamp);
+             Serial.println(DateStamp);
              lcd.setCursor(0,1);
-             lcd.print(DateTimeStampUTC);
-             Serial.println(DateTimeStampUTC);
+             lcd.print(TimeStamp);
+             Serial.println(TimeStamp;
              break;
           case 3:
+             lcd.clear();
              lcd.setCursor(0,0);
              lcd.print("This is Screen 3");
              Serial.println("This is Screen 3");             
