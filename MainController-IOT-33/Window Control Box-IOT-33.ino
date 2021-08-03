@@ -1,7 +1,7 @@
 // Arduino IOT33 Window Light Project
-// Main Controller 
+// Window Control Box - Buttons, Lights, Scale 
 // A. Dustin Mets
-// Revised 2021.07.16
+// Revised 2021.08.03
 // https://www.arduino.cc/reference/en/
 // https://www.arduino.cc/en/Reference/WiFiNINA
 // https://www.arduino.cc/en/Reference/RTC
@@ -33,34 +33,23 @@
 //
 // WiFi  
 //
-// Enter your sensitive data in the Secret tab/arduino_secrets.h
+// Enter your sensitive data in the Secret tab/MyWiFiSecrets.h
 // 
-// char ssid[] = SECRET_SSID;     // your network SSID (name) 
-// char pass[] = SECRET_PASS;     // your network password (use for WPA, or use as key for WEP)
- int status = WL_IDLE_STATUS;   // the WiFi radio's status
+// char ssid[] = SECRET_SSID;             // your network SSID (name) 
+// char pass[] = SECRET_PASS;             // your network password (use for WPA, or use as key for WEP)
+ int status = WL_IDLE_STATUS;             // the WiFi radio's status
  unsigned long previousWiFiMillis = millis();
  const int  WiFiDelay = 10000;            // Delay period to reset wifi
-MyWiFi MyWiFi(true); 
-
+MyWiFi MyWiFi(true);                      // Instantiate the MyWiFi class    
 //
 //
 //
 // Global Area (variables are local if declared within { } of loops/functions )
 //
 // Window Settings
- const int numWindow = 6; // declare and initalize the number of windows as a constant 
-//declare and initialize WinX for array reference purposes 
-//This may not be necessary if not, can remove later
-     int Win1 = 0;
-     int Win2 = 1;
-     int Win3 = 2;
-     int Win4 = 3;
-     int Win5 = 4;
-     int Win6 = 5;
-
- const String WinName[numWindow] = {"Window1","Window2","Window3","Window4","Window5","Window6"};      //how do I know I always process in window order?
- const int WinButtonPin[numWindow] = {2,3,4,5,6,7};                                                                                                                    // declare what ANALOG IO Pin each window button is connected to as a constant
-//
+const String WindowName = "Window 1";
+const int WindowNum = 1;
+const int ButtonPin = 2;  // !!!!!! This needs checked and updated !!!!!!
 // declare and initialize button high and low readings
  const int buttonGreenMin = 1;    // !!!!!! These need checked and updated !!!!!!
  const int buttonGreenMax = 100;    // !!!!!! These need checked and updated !!!!!!
@@ -68,7 +57,6 @@ MyWiFi MyWiFi(true);
  const int buttonBlueMax = 250;   // !!!!!! These need checked and updated !!!!!!
  const int buttonRedMin = 300;    // !!!!!! These need checked and updated !!!!!!
  const int buttonRedMax = 400;    // !!!!!! These need checked and updated !!!!!!
-
 // use "None" as the default condition in the Case statement
 //
 //
@@ -91,24 +79,24 @@ MyWiFi MyWiFi(true);
  const unsigned long XXLongPressMillisMin = 6001;                // 6.001 seconds for xxlong press Min in ms
  const unsigned long XXLongPressMillisMax = 10000;               // 10 seconds for xxlong press Max in ms
 
- unsigned long ButtonLastPolledMillis[numWindow];                // Time in ms when we the button was last polled
- unsigned long ButtonPresssedMillis[numWindow];                  // Time in ms when we the button was pressed
- String ButtonPresssedUTC[numWindow];                            // datetime in UTC when we the button was pressed
- unsigned long ButtonPressedDuration[numWindow];                 // Total time the button was pressed in ms. Non-Zero value means button was pressed
- String ButtonStateCurr[numWindow];                              // Reflect the current read state of the button
- String ButtonStatePrev[numWindow];                              // Reflect the previous read state of the button
+ unsigned long ButtonLastPolledMillis;                           // Time in ms when we the button was last polled
+ unsigned long ButtonPresssedMillis;                             // Time in ms when we the button was pressed
+ String ButtonPresssedUTC;                                       // datetime in UTC when we the button was pressed
+ unsigned long ButtonPressedDuration;                            // Total time the button was pressed in ms. Non-Zero value means button was pressed
+ String ButtonStateCurr;                                         // Reflect the current read state of the button
+ String ButtonStatePrev;                                         // Reflect the previous read state of the button
 //
 //
 // I2C Communications
- const int SLAVE_ADDR[numWindow]  = {9,3,4,5,6,7};      // Define Slave I2C Address
+ const int SLAVE_ADDR = 9;                              // Define Slave I2C Address
  #define ANSWERSIZE 5                                   // Define Slave I2C answer size
- //
- // I2C LCD Screen
-   LiquidCrystal_I2C lcd(0x27, 16, 2);                  // Define LCD I2C Address and Screen size
-   unsigned long previousLCDMillis = millis();          // When Screen was LCD last changec
-   const int  LCDDelay = 8000;                          // Delay period to change LCD Screen
-   const int LCDCarouselScreenMax = 3;                      // Define total number of different Carousel screens
-   int LCDCarouselScreen = 1;                               // Varialbe to keep current Carousel screen. 
+     //
+     // I2C LCD Screen
+     LiquidCrystal_I2C lcd(0x27, 16, 2);                  // Define LCD I2C Address and Screen size
+     unsigned long previousLCDMillis = millis();          // When Screen was LCD last changec
+     const int  LCDDelay = 8000;                          // Delay period to change LCD Screen
+     const int LCDCarouselScreenMax = 3;                  // Define total number of different Carousel screens
+     int LCDCarouselScreen = 1;                           // Varialbe to keep current Carousel screen. 
 //
 //
 //
@@ -180,90 +168,81 @@ void loop()                                         // Put your main code here, 
 //
 // Every 47 days or so the MILLIS reset to 0 and any pending actions will fail 
 // Clear all current presses - will result in an odd result for staff - but this will be a very infrequent occurrence 
-void TimeAdjustments()                              // Check to see if the Millis have reset and if so reset/clear pressed states
+//
+void TimeAdjustments()                                     // Check to see if the Millis have reset and if so reset/clear pressed states
 {
- if (currentMillis - ButtonLastPolledMillis[1] < 0)        // If the difference is negative number then the millis() have reset
-     {
+ if (currentMillis - ButtonLastPolledMillis < 0)           // If the difference is negative number then the millis() have reset
+    {
        Serial.println("Millis Reset");    
        lcd.setCursor(0,0);
        lcd.print("Millis Reset");
-       UpdateTimetoNTPServer();                               // Get epoch Set time to NTP Server
-     for(int i = 0; i<numWindow; i++)       
-          {
-            ButtonStatePrev[i] == "None";                  // Reset all buttons previous state to not pressed - if currently pressed, it will be detected as a new press and recorded as such for the next loop through
-            ButtonLastPolledMillis[i] = currentMillis;
-            ButtonPresssedMillis[i] == 0;                  // Check this - I don't think this causes a logic problem - but it might. Because only is written when a change is detected so 0 shouldn't matter until press 
+       UpdateTimetoNTPServer();                            // Get epoch Set time to NTP Server
+       ButtonStatePrev = "None";                           // Reset all buttons previous state to not pressed - if currently pressed, it will be detected as a new press and recorded as such for the next loop through
+       ButtonLastPolledMillis = currentMillis;             // Reset last button polled time
+       ButtonPresssedMillis = 0;                           // Check this - I don't think this causes a logic problem - but it might. Because only is written when a change is detected so 0 shouldn't matter until press 
                                                            // is detected and then the 0 will be overwritten
-            ButtonPresssedUTC[i] == "";
-          } // end for
-     }  // end if
+       ButtonPresssedUTC = "";                             // Reset button pressed UTC to null
+    }  // end if
 
  if (currentMillis - LastUpdatedToNTPMillis >= UpdateToNTPDelay)           // If Time delay for checking NTP Server has elapsed
      {
       UpdateTimetoNTPServer();                                                                            // Get epoch Set time to NTP Server
-      LastUpdatedToNTPMillis == currentMillis;                                                 // Reset epoch time delay counter
+      LastUpdatedToNTPMillis == currentMillis;                             // Reset epoch time delay counter
      }  // end if
 } // end  TimeAdjustments()
 
 
-void getWinButtonPinValue()                                                // Reads every button pin, determines the current state, preserves previous state
+void getButtonPinValue()                                                // Reads every button pin, determines the current state, preserves previous state
 {
- if (currentMillis - ButtonLastPolledMillis[1] >= PollIntervalMillis)      // Only take a reading if the Poll interval has elapsed since last read.
+ if (currentMillis - ButtonLastPolledMillis >= PollIntervalMillis)         // Only take a reading if the Poll interval has elapsed since last read.
      {
-     int WinButtonPinValue[numWindow];                                     // Declare temp array for to hold each Window's Button Pin Values
-
-          for(int i = 0; i<numWindow; i++)                                 // Loop to get value of the WinButtonPinValue for each Window
-          {
-            WinButtonPinValue[i] = analogRead(WinButtonPin[i]);            // Get Value on ButtonX Pin
-
-             ButtonLastPolledMillis[i] = currentMillis;                    // Set last polled millis to current millis for next loop 
-             ButtonStatePrev[i] = ButtonStateCurr[i];                      // Copy existing Current State of ButtonX to Previous State of button - prepare to receive new value
-             //
-             // Set the Current State of the Button
-             // Color if pressed, "None" if not 
-             //
-             switch (WinButtonPinValue[i])  
-                  {
-                    case 0:
-                      ButtonStateCurr[i] = "None";
-                      break;
-                    case buttonGreenMin ...  buttonGreenMax:
-                      ButtonStateCurr[i] = "Green";
-                      break;
-                    case buttonBlueMin ... buttonBlueMax:
-                      ButtonStateCurr[i] = "Blue";
-                      break;
-                    case buttonRedMin ... buttonRedMax:
-                      ButtonStateCurr[i] = "Red";
-                      break;
-                    default:
-                      ButtonStateCurr[i] = "None";
-                      break;
-                  }  // end case
-          }  // end for
+       int ButtonPinValue;                                                // Declare local variable for to hold Window's Button Pin Values
+       ButtonPinValue = analogRead(ButtonPin);            // Get Value on ButtonX Pin
+       ButtonLastPolledMillis = currentMillis;                    // Set last polled millis to current millis for next loop 
+       ButtonStatePrev = ButtonStateCurr;                      // Copy existing Current State of ButtonX to Previous State of button - prepare to receive new value
+       //
+       // Set the Current State of the Button
+       // Color if pressed, "None" if not 
+       //
+          switch (ButtonPinValue)  
+           {
+             case 0:
+               ButtonStateCurr = "None";
+               break;
+             case buttonGreenMin ...  buttonGreenMax:
+               ButtonStateCurr = "Green";
+               break;
+             case buttonBlueMin ... buttonBlueMax:
+               ButtonStateCurr = "Blue";
+               break;
+             case buttonRedMin ... buttonRedMax:
+               ButtonStateCurr = "Red";
+               break;
+             default:
+               ButtonStateCurr = "None";
+               break;
+           }  // end case
      }  // end if
-}  // end getWinButtonPinValue
+}  // end getButtonPinValue
 
 
 void compareWinButtonState()                                                                              // compares current state to previous state takes action
 {
-          for(int i = 0; i<numWindow; i++)
-          {
-          if (ButtonStateCurr[i] == ButtonStatePrev[i])                            // If Previous and current states Match -
-            {   
-              ;                                                                    // Do nothing - Keep on Keeping on
-            } 
-            else if (ButtonStateCurr[i] == "None")                               // If current doesn’t match previous and current state is "None" that means button has been released. 
-                 {                                                                 //Do Something Button was released. 
-                  ButtonPressedDuration[i] = currentMillis - ButtonPresssedMillis[i];   // Record total time button was pressed
-                 } // end else1
-            else if (ButtonStateCurr[i] != "None")                                                          //  If current state is NOT "None" and doesn’t match previous - that means button has been pressed. 
-                 {                                                                  // Do Something - Button was pressed
-                  ButtonPresssedMillis[i] = currentMillis;                          // Record button pressed millis
-                  ButtonPresssedUTC[i] = currentUTC;                                // Record button pressed UTC
-                   // Could have an issue if Previous was Blue and Current is Green - what would happen?
-                 } // end else2
-            } // end if 
+  if (ButtonStateCurr == ButtonStatePrev)                              // If Previous and current states Match -
+   {   
+     ;                                                                 // Do nothing - Keep on Keeping on
+   } 
+   else if (ButtonStateCurr == "None")                                 // If current doesn’t match previous and current state is "None" that means button has been released. 
+   {                                                                   //Do Something Button was released. 
+     ButtonPressedDuration = currentMillis - ButtonPresssedMillis;     // Record total time button was pressed
+   } // end else1
+   else if (ButtonStateCurr != "None")                                 //  If current state is NOT "None" and doesn’t match previous - that means button has been pressed. 
+   {                                                                   // Do Something - Button was pressed
+     ButtonPresssedMillis[i] = currentMillis;                          // Record button pressed millis
+     ButtonPresssedUTC[i] = currentUTC;                                // Record button pressed UTC
+    // Could have an issue if Previous was Blue and Current is Green - what would happen?
+   } // end else2/if
+ 
 
 /*
 Yes - 
@@ -283,27 +262,21 @@ If None -
 
 void changeWindowLight()
 {
- for(int i = 0; i<numWindow; i++)
-          {
-           switch (ButtonPressedDuration[i])  
-                  {
-                    case LongPressMillisMin ... LongPressMillisMax:
-                             // Action Here ;
-                             break;
-
-                    case XLongPressMillisMin ... XLongPressMillisMax:
-                             // Action Here ;
-                             break;
-
-                    case XXLongPressMillisMin ... XXLongPressMillisMax:
-                             // Action Here ;
-                             break;
-
-                    default:
-                             // DEFAULT Action here;
-                             break;
-                  }  // end case
-          }  // end for
+  switch (ButtonPressedDuration)  
+   {
+     case LongPressMillisMin ... LongPressMillisMax:
+       // Action Here ;
+       break;
+     case XLongPressMillisMin ... XLongPressMillisMax:
+       // Action Here ;
+       break;
+     case XXLongPressMillisMin ... XXLongPressMillisMax:
+       // Action Here ;
+       break;
+     default:
+       // DEFAULT Action here;
+       break;
+   }  // end case
 } // end changeWindowLight
 
 //
